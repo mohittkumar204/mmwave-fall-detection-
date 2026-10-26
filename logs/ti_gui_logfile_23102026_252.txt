@@ -1,0 +1,32 @@
+Python is  64  bit
+Python version:  3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+[detector] Noise filter: single_person=False, min_snr=8.0 dB, min_track_age=1 frames
+[detector] PyTorch load failed: [WinError 1114] A dynamic link library (DLL) initialization routine failed. Error loading "C:\Users\navap\AppData\Roaming\Python\Python313\site-packages\torch\lib\c10.dll" or one of its dependencies.
+[GUI] Successfully loaded trained ML fall detector: RandomForest (Approach A)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+Python is  64  bit
+Python version:  3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+[detector] Noise filter: single_person=False, min_snr=8.0 dB, min_track_age=1 frames
+[detector] PyTorch load failed: [WinError 1114] A dynamic link library (DLL) initialization routine failed. Error loading "C:\Users\navap\AppData\Roaming\Python\Python313\site-packages\torch\lib\c10.dll" or one of its dependencies.
+[GUI] Successfully loaded trained ML fall detector: RandomForest (Approach A)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+Python is  64  bit
+Python version:  3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+[detector] Noise filter: single_person=False, min_snr=8.0 dB, min_track_age=1 frames
+[detector] PyTorch load failed: [WinError 1114] A dynamic link library (DLL) initialization routine failed. Error loading "C:\Users\navap\AppData\Roaming\Python\Python313\site-packages\torch\lib\c10.dll" or one of its dependencies.
+[GUI] Successfully loaded trained ML fall detector: RandomForest (Approach A)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+Python is  64  bit
+Python version:  3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+[detector] Noise filter: single_person=False, min_snr=8.0 dB, min_track_age=1 frames
+[detector] PyTorch load failed: [WinError 1114] A dynamic link library (DLL) initialization routine failed. Error loading "C:\Users\navap\AppData\Roaming\Python\Python313\site-packages\torch\lib\c10.dll" or one of its dependencies.
+[GUI] Successfully loaded trained ML fall detector: RandomForest (Approach A)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+[GUI] Disconnected
+Python is  64  bit
+Python version:  3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+[detector] Noise filter: single_person=False, min_snr=8.0 dB, min_track_age=1 frames
+[detector] PyTorch load failed: [WinError 1114] A dynamic link library (DLL) initialization routine failed. Error loading "C:\Users\navap\AppData\Roaming\Python\Python313\site-packages\torch\lib\c10.dll" or one of its dependencies.
+[GUI] Successfully loaded trained ML fall detector: RandomForest (Approach A)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+[GUI] Serial Connection Error on COM99/COM98: could not open port 'COM99': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)

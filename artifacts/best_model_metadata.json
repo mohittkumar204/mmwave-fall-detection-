@@ -1,0 +1,48 @@
+{
+  "best_approach": "Approach_A_Statistical",
+  "best_model": "RandomForest",
+  "model_file": "models/best_fall_model.joblib",
+  "scaler_file": "artifacts/scaler.joblib",
+  "feature_names": [
+    "posz_mean",
+    "posz_std",
+    "posz_min",
+    "posz_max",
+    "posz_delta",
+    "posz_drop",
+    "velz_min",
+    "velz_mean",
+    "velz_std",
+    "accz_min",
+    "accz_mean",
+    "accz_std",
+    "vel_horiz_mean",
+    "vel_horiz_max",
+    "vel_total_mean",
+    "vel_total_max",
+    "point_z_spread",
+    "point_z_mean",
+    "point_y_spread",
+    "point_snr_mean",
+    "point_snr_max",
+    "posz_skew",
+    "posz_kurt"
+  ],
+  "input_dim": 23,
+  "target_mapping": {
+    "NO_FALL": 0,
+    "FALL": 1
+  },
+  "loso_f1_score": 0.625588843696166,
+  "loso_accuracy": 0.8831070224141832,
+  "loso_precision": 0.7141802879003362,
+  "loso_recall": 0.5807559200178839,
+  "loso_specificity": 0.9492153696981497,
+  "latency_ms": 53.984,
+  "sensor": {
+    "model": "IWR6843ISK-ODS",
+    "frequency_band": "60-64 GHz",
+    "nominal_frame_time_ms": 55.0,
+    "nominal_fps": 18.18
+  }
+}

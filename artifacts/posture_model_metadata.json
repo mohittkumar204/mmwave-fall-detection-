@@ -1,0 +1,53 @@
+{
+  "model_name": "RandomForest_5Class_Posture",
+  "classes": [
+    "STANDING",
+    "SITTING",
+    "LYING",
+    "FALLING",
+    "WALKING"
+  ],
+  "class_to_id": {
+    "standing": 0,
+    "sitting": 1,
+    "lying": 2,
+    "falling": 3,
+    "walking": 4
+  },
+  "id_to_class": {
+    "0": "standing",
+    "1": "sitting",
+    "2": "lying",
+    "3": "falling",
+    "4": "walking"
+  },
+  "feature_names": [
+    "posz_mean",
+    "posz_std",
+    "posz_min",
+    "posz_max",
+    "posz_delta",
+    "posz_drop",
+    "velz_min",
+    "velz_mean",
+    "velz_std",
+    "accz_min",
+    "accz_mean",
+    "accz_std",
+    "vel_horiz_mean",
+    "vel_horiz_max",
+    "vel_total_mean",
+    "vel_total_max",
+    "point_z_spread",
+    "point_z_mean",
+    "point_y_spread",
+    "point_snr_mean",
+    "point_snr_max",
+    "posz_skew",
+    "posz_kurt"
+  ],
+  "input_dim": 23,
+  "num_classes": 5,
+  "model_file": "models\\posture_model_5class.joblib",
+  "scaler_file": "artifacts\\posture_scaler.joblib"
+}

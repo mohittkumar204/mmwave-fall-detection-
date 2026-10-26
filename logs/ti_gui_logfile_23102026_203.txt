@@ -1,0 +1,93 @@
+Python is  64  bit
+Python version:  3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]
+[esp32-buzzer] Note: Unable to open ESP32 serial port 'COM15': could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+[esp32-buzzer] Configured WiFi UDP target: 192.168.1.150:4210
+[telegram] Initialized (Token: 850324...o-4k, Chat ID: 2112600021, Cooldown: 60.0s)
+[detector] Noise filter: single_person=True, min_snr=8.0 dB, min_track_age=1 frames
+[detector] Loaded ONNX Hybrid CNN-LSTM model from kinematic_cnn_lstm.onnx (classes: ['UPRIGHT', 'LYING', 'FALLING'])
+[GUI] Successfully loaded trained ML fall detector: Hybrid 1D-CNN+LSTM (Active) (SinglePersonMode: True)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+Python is  64  bit
+Python version:  3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]
+[esp32-buzzer] Note: Unable to open ESP32 serial port 'COM15': could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+[esp32-buzzer] Configured WiFi UDP target: 192.168.1.150:4210
+[telegram] Initialized (Token: 850324...o-4k, Chat ID: 2112600021, Cooldown: 60.0s)
+[detector] Noise filter: single_person=True, min_snr=8.0 dB, min_track_age=1 frames
+[detector] Loaded ONNX Hybrid CNN-LSTM model from kinematic_cnn_lstm.onnx (classes: ['UPRIGHT', 'LYING', 'FALLING'])
+[GUI] Successfully loaded trained ML fall detector: Hybrid 1D-CNN+LSTM (Active) (SinglePersonMode: True)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+Python is  64  bit
+Python version:  3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]
+[esp32-buzzer] Note: Unable to open ESP32 serial port 'COM15': could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+[esp32-buzzer] Configured WiFi UDP target: 192.168.1.150:4210
+[telegram] Initialized (Token: 850324...o-4k, Chat ID: 2112600021, Cooldown: 60.0s)
+[detector] Noise filter: single_person=True, min_snr=8.0 dB, min_track_age=1 frames
+[detector] Loaded ONNX Hybrid CNN-LSTM model from kinematic_cnn_lstm.onnx (classes: ['UPRIGHT', 'LYING', 'FALLING'])
+[GUI] Successfully loaded trained ML fall detector: Hybrid 1D-CNN+LSTM (Active) (SinglePersonMode: True)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+Python is  64  bit
+Python version:  3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]
+[esp32-buzzer] Note: Unable to open ESP32 serial port 'COM15': could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+[esp32-buzzer] Configured WiFi UDP target: 192.168.1.150:4210
+[telegram] Initialized (Token: 850324...o-4k, Chat ID: 2112600021, Cooldown: 60.0s)
+[detector] Noise filter: single_person=True, min_snr=8.0 dB, min_track_age=1 frames
+[detector] Loaded ONNX Hybrid CNN-LSTM model from kinematic_cnn_lstm.onnx (classes: ['UPRIGHT', 'LYING', 'FALLING'])
+[GUI] Successfully loaded trained ML fall detector: Hybrid 1D-CNN+LSTM (Active) (SinglePersonMode: True)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+[telegram] [OK] Fall alert successfully delivered to Telegram!
+[GUI] Disconnected
+Python is  64  bit
+Python version:  3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]
+[esp32-buzzer] Note: Unable to open ESP32 serial port 'COM15': could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+[esp32-buzzer] Configured WiFi UDP target: 192.168.1.150:4210
+[telegram] Initialized (Token: 850324...o-4k, Chat ID: 2112600021, Cooldown: 60.0s)
+[detector] Noise filter: single_person=True, min_snr=8.0 dB, min_track_age=1 frames
+[detector] Loaded ONNX Hybrid CNN-LSTM model from kinematic_cnn_lstm.onnx (classes: ['UPRIGHT', 'LYING', 'FALLING'])
+[GUI] Successfully loaded trained ML fall detector: Hybrid 1D-CNN+LSTM (Active) (SinglePersonMode: True)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+[GUI] Serial Connection Error on COM99/COM98: could not open port 'COM99': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+Python is  64  bit
+Python version:  3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]
+[esp32-buzzer] Note: Unable to open ESP32 serial port 'COM15': could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+[esp32-buzzer] Configured WiFi UDP target: 192.168.1.150:4210
+[telegram] Initialized (Token: 850324...o-4k, Chat ID: 2112600021, Cooldown: 60.0s)
+[detector] Noise filter: single_person=True, min_snr=8.0 dB, min_track_age=1 frames
+[detector] Loaded ONNX Hybrid CNN-LSTM model from kinematic_cnn_lstm.onnx (classes: ['UPRIGHT', 'LYING', 'FALLING'])
+[GUI] Successfully loaded trained ML fall detector: Hybrid 1D-CNN+LSTM (Active) (SinglePersonMode: True)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+Python is  64  bit
+Python version:  3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]
+[esp32-buzzer] Note: Unable to open ESP32 serial port 'COM15': could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+[esp32-buzzer] Configured WiFi UDP target: 192.168.1.150:4210
+[telegram] Initialized (Token: 850324...o-4k, Chat ID: 2112600021, Cooldown: 60.0s)
+[detector] Noise filter: single_person=True, min_snr=8.0 dB, min_track_age=1 frames
+[detector] Loaded ONNX Hybrid CNN-LSTM model from kinematic_cnn_lstm.onnx (classes: ['UPRIGHT', 'LYING', 'FALLING'])
+[GUI] Successfully loaded trained ML fall detector: Hybrid 1D-CNN+LSTM (Active) (SinglePersonMode: True)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+Python is  64  bit
+Python version:  3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]
+[esp32-buzzer] Note: Unable to open ESP32 serial port 'COM15': could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+[esp32-buzzer] Configured WiFi UDP target: 192.168.1.150:4210
+[telegram] Initialized (Token: 850324...o-4k, Chat ID: 2112600021, Cooldown: 60.0s)
+[detector] Noise filter: single_person=True, min_snr=8.0 dB, min_track_age=1 frames
+[detector] Loaded ONNX Hybrid CNN-LSTM model from kinematic_cnn_lstm.onnx (classes: ['UPRIGHT', 'LYING', 'FALLING'])
+[GUI] Successfully loaded trained ML fall detector: Hybrid 1D-CNN+LSTM (Active) (SinglePersonMode: True)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+Python is  64  bit
+Python version:  3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]
+[esp32-buzzer] Note: Unable to open ESP32 serial port 'COM15': could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+[esp32-buzzer] Configured WiFi UDP target: 192.168.1.150:4210
+[telegram] Initialized (Token: 850324...o-4k, Chat ID: 2112600021, Cooldown: 60.0s)
+[detector] Noise filter: single_person=True, min_snr=8.0 dB, min_track_age=1 frames
+[detector] Loaded ONNX Hybrid CNN-LSTM model from kinematic_cnn_lstm.onnx (classes: ['UPRIGHT', 'LYING', 'FALLING'])
+[GUI] Successfully loaded trained ML fall detector: Hybrid 1D-CNN+LSTM (Active) (SinglePersonMode: True)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg
+Python is  64  bit
+Python version:  3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]
+[esp32-buzzer] Note: Unable to open ESP32 serial port 'COM15': could not open port 'COM15': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+[esp32-buzzer] Configured WiFi UDP target: 192.168.1.150:4210
+[telegram] Initialized (Token: 850324...o-4k, Chat ID: 2112600021, Cooldown: 60.0s)
+[detector] Noise filter: single_person=True, min_snr=8.0 dB, min_track_age=1 frames
+[detector] Loaded ONNX Hybrid CNN-LSTM model from kinematic_cnn_lstm.onnx (classes: ['UPRIGHT', 'LYING', 'FALLING'])
+[GUI] Successfully loaded trained ML fall detector: Hybrid 1D-CNN+LSTM (Active) (SinglePersonMode: True)
+[GUI] Preloaded configuration: ODS_6m_posture_tuned.cfg

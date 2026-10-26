@@ -1,0 +1,230 @@
+{
+  "strategy": "Leave-One-Subject-Out (LOSO) Cross-Validation",
+  "num_folds": 6,
+  "total_subjects": 6,
+  "subjects": [
+    "person1",
+    "person2",
+    "person3",
+    "person4",
+    "person5",
+    "person6"
+  ],
+  "folds": [
+    {
+      "fold": 1,
+      "test_subject": "person1",
+      "train_subjects": [
+        "person2",
+        "person3",
+        "person4",
+        "person5",
+        "person6"
+      ],
+      "num_train_samples": 17628,
+      "num_test_samples": 3784,
+      "train_classes": {
+        "standing": 4231,
+        "lying": 3559,
+        "walking": 3551,
+        "falling": 3166,
+        "sitting": 3121
+      },
+      "test_classes": {
+        "standing": 1478,
+        "walking": 894,
+        "sitting": 539,
+        "falling": 538,
+        "lying": 335
+      },
+      "train_binary_fall": {
+        "0": 14462,
+        "1": 3166
+      },
+      "test_binary_fall": {
+        "0": 3246,
+        "1": 538
+      },
+      "notes": "Full 5-class coverage in test set."
+    },
+    {
+      "fold": 2,
+      "test_subject": "person2",
+      "train_subjects": [
+        "person1",
+        "person3",
+        "person4",
+        "person5",
+        "person6"
+      ],
+      "num_train_samples": 18493,
+      "num_test_samples": 2919,
+      "train_classes": {
+        "standing": 5709,
+        "walking": 3581,
+        "falling": 3230,
+        "sitting": 3125,
+        "lying": 2848
+      },
+      "test_classes": {
+        "lying": 1046,
+        "walking": 864,
+        "sitting": 535,
+        "falling": 474
+      },
+      "train_binary_fall": {
+        "0": 15263,
+        "1": 3230
+      },
+      "test_binary_fall": {
+        "0": 2445,
+        "1": 474
+      },
+      "notes": "Subject person2 has 0 standing samples due to empty session."
+    },
+    {
+      "fold": 3,
+      "test_subject": "person3",
+      "train_subjects": [
+        "person1",
+        "person2",
+        "person4",
+        "person5",
+        "person6"
+      ],
+      "num_train_samples": 16962,
+      "num_test_samples": 4450,
+      "train_classes": {
+        "standing": 4657,
+        "walking": 3610,
+        "sitting": 3171,
+        "lying": 2905,
+        "falling": 2619
+      },
+      "test_classes": {
+        "falling": 1085,
+        "standing": 1052,
+        "lying": 989,
+        "walking": 835,
+        "sitting": 489
+      },
+      "train_binary_fall": {
+        "0": 14343,
+        "1": 2619
+      },
+      "test_binary_fall": {
+        "0": 3365,
+        "1": 1085
+      },
+      "notes": "Full 5-class coverage in test set."
+    },
+    {
+      "fold": 4,
+      "test_subject": "person4",
+      "train_subjects": [
+        "person1",
+        "person2",
+        "person3",
+        "person5",
+        "person6"
+      ],
+      "num_train_samples": 18106,
+      "num_test_samples": 3306,
+      "train_classes": {
+        "standing": 4645,
+        "walking": 3788,
+        "lying": 3355,
+        "falling": 3184,
+        "sitting": 3134
+      },
+      "test_classes": {
+        "standing": 1064,
+        "walking": 657,
+        "lying": 539,
+        "sitting": 526,
+        "falling": 520
+      },
+      "train_binary_fall": {
+        "0": 14922,
+        "1": 3184
+      },
+      "test_binary_fall": {
+        "0": 2786,
+        "1": 520
+      },
+      "notes": "Full 5-class coverage in test set."
+    },
+    {
+      "fold": 5,
+      "test_subject": "person5",
+      "train_subjects": [
+        "person1",
+        "person2",
+        "person3",
+        "person4",
+        "person6"
+      ],
+      "num_train_samples": 17801,
+      "num_test_samples": 3611,
+      "train_classes": {
+        "standing": 4661,
+        "walking": 3921,
+        "lying": 3441,
+        "falling": 3158,
+        "sitting": 2620
+      },
+      "test_classes": {
+        "standing": 1048,
+        "sitting": 1040,
+        "falling": 546,
+        "walking": 524,
+        "lying": 453
+      },
+      "train_binary_fall": {
+        "0": 14643,
+        "1": 3158
+      },
+      "test_binary_fall": {
+        "0": 3065,
+        "1": 546
+      },
+      "notes": "Full 5-class coverage in test set."
+    },
+    {
+      "fold": 6,
+      "test_subject": "person6",
+      "train_subjects": [
+        "person1",
+        "person2",
+        "person3",
+        "person4",
+        "person5"
+      ],
+      "num_train_samples": 18070,
+      "num_test_samples": 3342,
+      "train_classes": {
+        "standing": 4642,
+        "walking": 3774,
+        "lying": 3362,
+        "falling": 3163,
+        "sitting": 3129
+      },
+      "test_classes": {
+        "standing": 1067,
+        "walking": 671,
+        "falling": 541,
+        "lying": 532,
+        "sitting": 531
+      },
+      "train_binary_fall": {
+        "0": 14907,
+        "1": 3163
+      },
+      "test_binary_fall": {
+        "0": 2801,
+        "1": 541
+      },
+      "notes": "Full 5-class coverage in test set."
+    }
+  ]
+}

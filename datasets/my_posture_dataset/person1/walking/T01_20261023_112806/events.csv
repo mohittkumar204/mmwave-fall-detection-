@@ -1,0 +1,3 @@
+frame,time,label,tid,event,notes
+0,1792735090.2196362,walking,,capture_start,
+1142,1792735150.2779343,walking,,capture_stop,Recorded 1142 frames

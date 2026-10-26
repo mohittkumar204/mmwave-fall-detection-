@@ -1,0 +1,15 @@
+{
+  "class_names": [
+    "STANDING",
+    "SITTING",
+    "LYING",
+    "FALLING",
+    "WALKING"
+  ],
+  "normalization_enabled": true,
+  "scaler_path": "feature_scaler.npz",
+  "n_features": 176,
+  "model_type": "RandomForestClassifier",
+  "n_estimators": 300,
+  "framework": "sklearn -> skl2onnx"
+}

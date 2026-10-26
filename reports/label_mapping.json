@@ -1,0 +1,33 @@
+{
+  "binary_mapping": {
+    "NO_FALL": 0,
+    "FALL": 1
+  },
+  "multiclass_mapping": {
+    "falling": 3,
+    "lying": 2,
+    "sitting": 1,
+    "standing": 0,
+    "walking": 4
+  },
+  "class_names": [
+    "STANDING",
+    "SITTING",
+    "LYING",
+    "FALLING",
+    "WALKING"
+  ],
+  "activity_to_binary": {
+    "standing": "NO_FALL",
+    "sitting": "NO_FALL",
+    "lying": "NO_FALL",
+    "walking": "NO_FALL",
+    "falling": "FALL"
+  },
+  "sensor_metadata": {
+    "model": "IWR6843ISK-ODS",
+    "frequency_band": "60-64 GHz",
+    "nominal_frame_time_ms": 55.0,
+    "nominal_fps": 18.18
+  }
+}

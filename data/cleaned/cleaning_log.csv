@@ -1,0 +1,113 @@
+trial,stage,action,reason,details
+person1/falling/T01_20261008_132511,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 538 ready windows; excluded 7 initial unready slots
+person1/falling/T01_20261008_132511,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"545 target frames, 538 ready windows"
+person1/falling/T02_20261013_161642,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 539 ready windows; excluded 7 initial unready slots
+person1/falling/T02_20261013_161642,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"546 target frames, 539 ready windows"
+person1/lying/T01_20261008_133209,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 335 ready windows; excluded 7 initial unready slots
+person1/lying/T01_20261008_133209,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"342 target frames, 335 ready windows"
+person1/lying/T02_20261013_161748,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 539 ready windows; excluded 7 initial unready slots
+person1/lying/T02_20261013_161748,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"546 target frames, 539 ready windows"
+person1/sitting/T01_20261008_132348,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 539 ready windows; excluded 7 initial unready slots
+person1/sitting/T01_20261008_132348,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"546 target frames, 539 ready windows"
+person1/sitting/T02_20261013_161557,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 538 ready windows; excluded 7 initial unready slots
+person1/sitting/T02_20261013_161557,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"545 target frames, 538 ready windows"
+person1/standing/T01_20261008_131821,coordinate_validation,FILTER_EXTREME_OUTLIER,Extreme sensor coordinate anomaly |z| > 10m,Removed 1 rows
+person1/standing/T01_20261008_131821,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 940 ready windows; excluded 21 initial unready slots
+person1/standing/T01_20261008_131821,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"960 target frames, 940 ready windows"
+person1/standing/T02_20261008_131959,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 538 ready windows; excluded 7 initial unready slots
+person1/standing/T02_20261008_131959,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"545 target frames, 538 ready windows"
+person1/standing/T03_20261013_161411,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 539 ready windows; excluded 7 initial unready slots
+person1/standing/T03_20261013_161411,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"546 target frames, 539 ready windows"
+person1/standing/T03_20261013_163623,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 425 ready windows; excluded 28 initial unready slots
+person1/standing/T03_20261013_163623,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"453 target frames, 425 ready windows"
+person1/walking/T01_20261008_132142,trial_validation,EXCLUDE_TRIAL,Empty recording session (no detected targets/points),File size 67 bytes
+person1/walking/T01_20261008_132154,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 894 ready windows; excluded 28 initial unready slots
+person1/walking/T01_20261008_132154,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"922 target frames, 894 ready windows"
+person1/walking/T02_20261013_161505,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 539 ready windows; excluded 7 initial unready slots
+person1/walking/T02_20261013_161505,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"546 target frames, 539 ready windows"
+person2/falling/T01_20261008_134027,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 474 ready windows; excluded 28 initial unready slots
+person2/falling/T01_20261008_134027,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"502 target frames, 474 ready windows"
+person2/falling/T02_20261013_162308,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 574 ready windows; excluded 19 initial unready slots
+person2/falling/T02_20261013_162308,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"593 target frames, 574 ready windows"
+person2/lying/T01_20261008_134503,coordinate_validation,FILTER_EXTREME_OUTLIER,Extreme sensor coordinate anomaly |z| > 10m,Removed 2 rows
+person2/lying/T01_20261008_134503,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 1046 ready windows; excluded 15 initial unready slots
+person2/lying/T01_20261008_134503,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"1059 target frames, 1046 ready windows"
+person2/lying/T02_20261013_162436,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 22 ready windows; excluded 7 initial unready slots
+person2/lying/T02_20261013_162436,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"29 target frames, 22 ready windows"
+person2/sitting/T01_20261008_133842,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 535 ready windows; excluded 7 initial unready slots
+person2/sitting/T01_20261008_133842,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"542 target frames, 535 ready windows"
+person2/sitting/T02_20261013_162207,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 535 ready windows; excluded 7 initial unready slots
+person2/sitting/T02_20261013_162207,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"542 target frames, 535 ready windows"
+person2/standing/T01_20261008_133624,trial_validation,EXCLUDE_TRIAL,Empty recording session (no detected targets/points),File size 67 bytes
+person2/standing/T02_20261013_162004,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 606 ready windows; excluded 21 initial unready slots
+person2/standing/T02_20261013_162004,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"627 target frames, 606 ready windows"
+person2/walking/T01_20261008_134322,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 864 ready windows; excluded 15 initial unready slots
+person2/walking/T01_20261008_134322,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"879 target frames, 864 ready windows"
+person2/walking/T02_20261013_162112,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 535 ready windows; excluded 7 initial unready slots
+person2/walking/T02_20261013_162112,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"542 target frames, 535 ready windows"
+person3/falling/T01_20261008_135843,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 1085 ready windows; excluded 28 initial unready slots
+person3/falling/T01_20261008_135843,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"1113 target frames, 1085 ready windows"
+person3/falling/T01_20261013_163105,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 638 ready windows; excluded 21 initial unready slots
+person3/falling/T01_20261013_163105,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"659 target frames, 638 ready windows"
+person3/lying/T01_20261008_140011,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 989 ready windows; excluded 14 initial unready slots
+person3/lying/T01_20261008_140011,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"1003 target frames, 989 ready windows"
+person3/lying/T01_20261013_163203,trial_validation,EXCLUDE_TRIAL,Empty recording session (no detected targets/points),File size 67 bytes
+person3/lying/T03_20261013_163341,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 539 ready windows; excluded 7 initial unready slots
+person3/lying/T03_20261013_163341,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"546 target frames, 539 ready windows"
+person3/sitting/T01_20261008_135536,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 489 ready windows; excluded 21 initial unready slots
+person3/sitting/T01_20261008_135536,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"510 target frames, 489 ready windows"
+person3/sitting/T01_20261013_163014,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 544 ready windows; excluded 14 initial unready slots
+person3/sitting/T01_20261013_163014,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"558 target frames, 544 ready windows"
+person3/standing/T01_20261008_135413,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 1052 ready windows; excluded 21 initial unready slots
+person3/standing/T01_20261008_135413,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"1073 target frames, 1052 ready windows"
+person3/standing/T02_20261013_162648,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 535 ready windows; excluded 7 initial unready slots
+person3/standing/T02_20261013_162648,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"542 target frames, 535 ready windows"
+person3/walking/T01_20261008_135711,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 835 ready windows; excluded 14 initial unready slots
+person3/walking/T01_20261008_135711,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"849 target frames, 835 ready windows"
+person3/walking/T01_20261013_162847,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 727 ready windows; excluded 20 initial unready slots
+person3/walking/T01_20261013_162847,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"747 target frames, 727 ready windows"
+person4/falling/T01_20261008_140922,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 520 ready windows; excluded 14 initial unready slots
+person4/falling/T01_20261008_140922,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"534 target frames, 520 ready windows"
+person4/falling/T03_20261013_164350,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 489 ready windows; excluded 14 initial unready slots
+person4/falling/T03_20261013_164350,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"503 target frames, 489 ready windows"
+person4/lying/T01_20261008_141040,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 539 ready windows; excluded 7 initial unready slots
+person4/lying/T01_20261008_141040,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"546 target frames, 539 ready windows"
+person4/lying/T03_20261013_164142,trial_validation,EXCLUDE_TRIAL,Empty recording session (no detected targets/points),File size 67 bytes
+person4/lying/T03_20261013_164233,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 1075 ready windows; excluded 14 initial unready slots
+person4/lying/T03_20261013_164233,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"1089 target frames, 1075 ready windows"
+person4/sitting/T01_20261008_140806,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 526 ready windows; excluded 14 initial unready slots
+person4/sitting/T01_20261008_140806,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"540 target frames, 526 ready windows"
+person4/sitting/T03_20261013_163831,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 524 ready windows; excluded 7 initial unready slots
+person4/sitting/T03_20261013_163831,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"531 target frames, 524 ready windows"
+person4/standing/T01_20261008_140519,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 1064 ready windows; excluded 14 initial unready slots
+person4/standing/T01_20261008_140519,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"1078 target frames, 1064 ready windows"
+person4/standing/T02_20261013_163538,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 539 ready windows; excluded 7 initial unready slots
+person4/standing/T02_20261013_163538,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"546 target frames, 539 ready windows"
+person4/standing/T03_20261013_163716,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 525 ready windows; excluded 7 initial unready slots
+person4/standing/T03_20261013_163716,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"532 target frames, 525 ready windows"
+person4/walking/T01_20261008_140651,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 657 ready windows; excluded 24 initial unready slots
+person4/walking/T01_20261008_140651,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"681 target frames, 657 ready windows"
+person4/walking/T03_20261013_163928,trial_validation,EXCLUDE_TRIAL,Empty recording session (no detected targets/points),File size 67 bytes
+person4/walking/T03_20261013_164016,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 587 ready windows; excluded 14 initial unready slots
+person4/walking/T03_20261013_164016,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"601 target frames, 587 ready windows"
+person5/falling/T01_20261008_142050,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 546 ready windows; excluded 28 initial unready slots
+person5/falling/T01_20261008_142050,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"574 target frames, 546 ready windows"
+person5/lying/T01_20261008_142207,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 453 ready windows; excluded 7 initial unready slots
+person5/lying/T01_20261008_142207,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"460 target frames, 453 ready windows"
+person5/sitting/T01_20261008_141928,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 1040 ready windows; excluded 21 initial unready slots
+person5/sitting/T01_20261008_141928,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"1061 target frames, 1040 ready windows"
+person5/standing/T01_20261008_141634,coordinate_validation,FILTER_EXTREME_OUTLIER,Extreme sensor coordinate anomaly |z| > 10m,Removed 1 rows
+person5/standing/T01_20261008_141634,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 1048 ready windows; excluded 20 initial unready slots
+person5/standing/T01_20261008_141634,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"1067 target frames, 1048 ready windows"
+person5/walking/T01_20261008_141759,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 524 ready windows; excluded 7 initial unready slots
+person5/walking/T01_20261008_141759,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"531 target frames, 524 ready windows"
+person6/falling/T01_20261008_142754,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 541 ready windows; excluded 14 initial unready slots
+person6/falling/T01_20261008_142754,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"555 target frames, 541 ready windows"
+person6/lying/T01_20261008_142910,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 532 ready windows; excluded 7 initial unready slots
+person6/lying/T01_20261008_142910,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"539 target frames, 532 ready windows"
+person6/sitting/T01_20261008_142636,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 531 ready windows; excluded 7 initial unready slots
+person6/sitting/T01_20261008_142636,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"538 target frames, 531 ready windows"
+person6/standing/T01_20261008_142404,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 1067 ready windows; excluded 14 initial unready slots
+person6/standing/T01_20261008_142404,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"1081 target frames, 1067 ready windows"
+person6/walking/T01_20261008_142514,window_preparation,RETAIN_READY_WINDOWS,Transient initial padding slots (first 7 frames of track history),Kept 671 ready windows; excluded 26 initial unready slots
+person6/walking/T01_20261008_142514,summary,RETAIN_VALID_TRIAL,Valid trial processed cleanly,"697 target frames, 671 ready windows"

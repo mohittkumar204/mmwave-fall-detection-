@@ -1,0 +1,32 @@
+{
+  "model_name": "Kinematic_1D_CNN_LSTM",
+  "features": [
+    "x",
+    "y",
+    "z",
+    "vx",
+    "vy",
+    "vz",
+    "ax",
+    "ay",
+    "az"
+  ],
+  "input_shape": [
+    1,
+    8,
+    9
+  ],
+  "classes": [
+    "UPRIGHT",
+    "LYING",
+    "FALLING"
+  ],
+  "num_classes": 3,
+  "window_size": 8,
+  "nominal_fps": 18.18,
+  "window_duration_seconds": 0.44,
+  "best_val_macro_f1": 0.6819416863659926,
+  "pt_model": "models\\kinematic_cnn_lstm.pt",
+  "onnx_model": "models\\onnx\\kinematic_cnn_lstm.onnx",
+  "scaler": "models\\kinematic_scaler.npz"
+}
