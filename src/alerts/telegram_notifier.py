@@ -48,9 +48,13 @@ class TelegramNotifier:
         cooldown_seconds: Optional[float] = None,
         min_recovery_frames: int = 10,
     ):
-        # Resolve credentials from arguments or environment
+        # Resolve Alert Bot credentials (receives emergency alerts)
         self.bot_token = bot_token or os.getenv("TELEGRAM_BOT_TOKEN", "").strip() or None
         self.chat_id = chat_id or os.getenv("TELEGRAM_CHAT_ID", "").strip() or None
+
+        # Resolve Command Bot credentials (listens for /fall and /upright)
+        self.command_bot_token = os.getenv("TELEGRAM_COMMAND_BOT_TOKEN", "").strip() or self.bot_token
+        self.command_chat_id = os.getenv("TELEGRAM_COMMAND_CHAT_ID", "").strip() or self.chat_id
 
         self.enabled = (
             enabled if enabled is not None
@@ -74,12 +78,9 @@ class TelegramNotifier:
         self.remote_control_enabled = (
             os.getenv("TELEGRAM_REMOTE_CONTROL", "True").strip().lower() in ("true", "1", "yes")
         )
-        # Default override state: UPRIGHT if remote override is active (and not under pytest test runner), else None
-        is_testing = "PYTEST_CURRENT_TEST" in os.environ
-        if not is_testing and os.getenv("TELEGRAM_REMOTE_OVERRIDE", "True").strip().lower() in ("true", "1", "yes"):
-            self._forced_state: Optional[str] = os.getenv("TELEGRAM_DEFAULT_STATE", "UPRIGHT").strip().upper()
-        else:
-            self._forced_state: Optional[str] = None
+        # Default override state: None (automatic radar ML detection) unless explicitly configured
+        def_state = os.getenv("TELEGRAM_DEFAULT_STATE", "").strip().upper()
+        self._forced_state: Optional[str] = def_state if def_state in ("FALL", "UPRIGHT") else None
         self._forced_state_timestamp: float = time.time()
 
         # Asynchronous dispatch queue and daemon worker
@@ -90,7 +91,7 @@ class TelegramNotifier:
 
         # Background command polling thread to listen for Telegram /fall and /upright commands
         self._listener_thread = None
-        if self.is_configured and self.enabled and self.remote_control_enabled:
+        if self.is_command_configured and self.enabled and self.remote_control_enabled:
             self._listener_thread = threading.Thread(target=self._command_listener_loop, daemon=True)
             self._listener_thread.start()
 
@@ -100,15 +101,23 @@ class TelegramNotifier:
                 f"{self.bot_token[:6]}...{self.bot_token[-4:]}"
                 if len(self.bot_token) > 10 else "***"
             )
-            print(f"[telegram] Initialized (Token: {masked_token}, Chat ID: {self.chat_id}, Cooldown: {self.cooldown_seconds}s)")
-        else:
-            if self.enabled:
-                print("[telegram] Note: Telegram alerts enabled but TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is not configured in .env.")
+            print(f"[telegram] Alert Bot Initialized (Token: {masked_token}, Chat ID: {self.chat_id})")
+        if self.is_command_configured:
+            masked_cmd_token = (
+                f"{self.command_bot_token[:6]}...{self.command_bot_token[-4:]}"
+                if len(self.command_bot_token) > 10 else "***"
+            )
+            print(f"[telegram] Command Bot Initialized (Token: {masked_cmd_token}, Listener Chat ID: {self.command_chat_id})")
 
     @property
     def is_configured(self) -> bool:
-        """Returns True if valid token and chat ID are provided and requests is installed."""
+        """Returns True if valid alert token and chat ID are provided and requests is installed."""
         return bool(HAS_REQUESTS and self.bot_token and self.chat_id)
+
+    @property
+    def is_command_configured(self) -> bool:
+        """Returns True if valid command listener token is provided and requests is installed."""
+        return bool(HAS_REQUESTS and self.command_bot_token)
 
     def _worker_loop(self):
         """Dedicated background thread loop that posts messages to Telegram API."""
@@ -128,6 +137,22 @@ class TelegramNotifier:
             finally:
                 self._msg_queue.task_done()
 
+    def _http_request(self, method: str, url: str, **kwargs) -> Optional[requests.Response]:
+        """Make an HTTP request with automatic SSL verification fallback."""
+        if not HAS_REQUESTS:
+            return None
+        kwargs.setdefault("timeout", 5.0)
+        try:
+            return requests.request(method, url, **kwargs)
+        except requests.exceptions.SSLError:
+            try:
+                import urllib3
+                urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            except Exception:
+                pass
+            kwargs["verify"] = False
+            return requests.request(method, url, **kwargs)
+
     def _post_to_telegram(self, text: str) -> bool:
         """Send message via Telegram HTTP Bot API."""
         if not self.is_configured:
@@ -142,13 +167,14 @@ class TelegramNotifier:
         }
 
         try:
-            resp = requests.post(url, json=payload, timeout=5.0)
-            if resp.status_code == 200:
+            resp = self._http_request("POST", url, json=payload, timeout=5.0)
+            if resp is not None and resp.status_code == 200:
                 print("[telegram] [OK] Fall alert successfully delivered to Telegram!")
                 return True
-            else:
+            elif resp is not None:
                 print(f"[telegram] Warning: Telegram API returned status {resp.status_code}: {resp.text}")
                 return False
+            return False
         except requests.exceptions.Timeout:
             print("[telegram] Warning: Telegram dispatch timed out (5s limit).")
             return False
@@ -166,6 +192,20 @@ class TelegramNotifier:
         """
         if not self.enabled or not self.is_configured:
             return False
+
+        # Height check & remote override check
+        forced = self.get_forced_state()
+        if forced == "UPRIGHT":
+            return False
+
+        if forced != "FALL":
+            z_val = event_data.get("pos_z", event_data.get("target_z", event_data.get("height")))
+            if z_val is not None:
+                try:
+                    if float(z_val) > 0.68:
+                        return False
+                except (ValueError, TypeError):
+                    pass
 
         now = time.time()
         tid = event_data.get("tid", 0)
@@ -259,13 +299,14 @@ class TelegramNotifier:
 
         url = f"https://api.telegram.org/bot{self.bot_token}/getMe"
         try:
-            resp = requests.get(url, timeout=5.0)
-            if resp.status_code == 200:
+            resp = self._http_request("GET", url, timeout=5.0)
+            if resp is not None and resp.status_code == 200:
                 data = resp.json().get("result", {})
                 bot_username = data.get("username", "UnknownBot")
                 return True, f"Connected to @{bot_username}"
-            else:
+            elif resp is not None:
                 return False, f"Telegram API Error {resp.status_code}: {resp.text}"
+            return False, "Connection Failed"
         except Exception as e:
             return False, f"Connection Failed: {e}"
 
@@ -309,6 +350,12 @@ class TelegramNotifier:
     def get_forced_state(self) -> Optional[str]:
         """Return the current forced state ('FALL', 'UPRIGHT', or None for AUTO)."""
         with self._state_lock:
+            now = time.time()
+            # Auto-expire forced override after 0.5 seconds as requested
+            if self._forced_state == "FALL" and (now - self._forced_state_timestamp >= 0.5):
+                self._forced_state = None
+            elif self._forced_state == "UPRIGHT" and (now - self._forced_state_timestamp >= 0.5):
+                self._forced_state = None
             return self._forced_state
 
     def set_forced_state(self, state: Optional[str]):
@@ -319,33 +366,32 @@ class TelegramNotifier:
         print(f"[telegram] Forced state updated to: {self._forced_state}")
 
     def _command_listener_loop(self):
-        """Continuously polls Telegram getUpdates for remote control commands."""
+        """Continuously polls Telegram getUpdates on the Command Bot for /fall and /upright commands."""
         last_update_id = 0
-        # Catch up to latest update ID so historical messages aren't re-processed
-        if self.is_configured and self.enabled:
+        if self.is_command_configured and self.enabled:
             try:
-                url = f"https://api.telegram.org/bot{self.bot_token}/getUpdates"
-                resp = requests.get(url, params={"limit": 5}, timeout=4.0)
-                if resp.status_code == 200:
+                url = f"https://api.telegram.org/bot{self.command_bot_token}/getUpdates"
+                resp = self._http_request("GET", url, params={"limit": 5}, timeout=4.0)
+                if resp is not None and resp.status_code == 200:
                     results = resp.json().get("result", [])
                     if results:
                         last_update_id = max(u.get("update_id", 0) for u in results)
             except Exception:
                 pass
 
-        print(f"[telegram] Remote command listener active on @testfallbot (offset={last_update_id})")
+        print(f"[telegram] Remote command listener active on command bot (offset={last_update_id})")
 
         while not self._stop_event.is_set():
-            if not self.is_configured or not self.enabled:
+            if not self.is_command_configured or not self.enabled:
                 time.sleep(1.0)
                 continue
             try:
-                url = f"https://api.telegram.org/bot{self.bot_token}/getUpdates"
+                url = f"https://api.telegram.org/bot{self.command_bot_token}/getUpdates"
                 params = {"timeout": 2, "limit": 10}
                 if last_update_id > 0:
                     params["offset"] = last_update_id + 1
-                resp = requests.get(url, params=params, timeout=5.0)
-                if resp.status_code == 200:
+                resp = self._http_request("GET", url, params=params, timeout=5.0)
+                if resp is not None and resp.status_code == 200:
                     updates = resp.json().get("result", [])
                     for up in updates:
                         up_id = up.get("update_id", 0)
@@ -355,7 +401,7 @@ class TelegramNotifier:
                         text = msg.get("text", "").strip()
                         chat = msg.get("chat", {})
                         from_user = msg.get("from", {}).get("first_name", "User")
-                        target_chat_id = chat.get("id") or self.chat_id
+                        target_chat_id = chat.get("id") or self.command_chat_id
                         if text:
                             self._process_remote_command(text, target_chat_id, from_user)
             except Exception:
@@ -363,76 +409,48 @@ class TelegramNotifier:
             time.sleep(0.4)
 
     def _process_remote_command(self, text: str, target_chat_id: Any, from_user: str = "User"):
-        """Process incoming Telegram command strings."""
+        """Process incoming Telegram command strings (/fall or /upright)."""
         cmd = text.strip().lower()
-        print(f"[telegram] Command received from {from_user}: '{text}'")
+        print(f"[telegram] Remote command received from {from_user}: '{text}'")
 
-        if cmd in ("/fall", "fall", "/fallen", "fallen", "trigger fall", "fall alert", "/alert", "down", "/down"):
+        if cmd in ("/fall", "fall", "/fallen", "fallen", "/down", "down"):
             with self._state_lock:
                 self._forced_state = "FALL"
                 self._forced_state_timestamp = time.time()
             reply = (
-                "🚨 *FALL DETECTED Override Activated!*\n"
+                "🚨 *FALL OVERRIDE ACTIVATED!*\n"
                 "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                "🖥️ The GUI display is now showing: *FALLEN!*\n"
-                "🔊 Hardware buzzer alert has been triggered.\n\n"
-                "Send `/upright` or `/reset` to return to Upright."
+                "🖥️ GUI Display: *FALLEN!*\n"
+                "🔊 Hardware buzzer alert triggered.\n"
+                "📲 Emergency notification dispatched to Alert Telegram."
             )
             self._send_reply(reply, target_chat_id)
+            # Dispatch emergency notification to the dedicated Alert Bot channel
+            self.send_fall_alert({
+                "tid": 0,
+                "timestamp": time.time(),
+                "model_class": "FALLING",
+                "confidence": 0.999,
+                "motion_label": "⚠️ PRESENTATION REMOTE OVERRIDE (/fall)",
+            })
 
-        elif cmd in ("/upright", "upright", "/stand", "stand", "/reset", "reset", "/clear", "clear", "/normal", "ok", "/ok"):
+        elif cmd in ("/upright", "upright", "/stand", "stand", "/reset", "reset", "/clear", "clear"):
             with self._state_lock:
                 self._forced_state = "UPRIGHT"
                 self._forced_state_timestamp = time.time()
             reply = (
-                "✅ *System Reset to UPRIGHT*\n"
+                "✅ *SYSTEM RESET TO UPRIGHT*\n"
                 "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                "🖥️ The GUI display is now showing: *Upright*\n"
-                "🟢 Normal posture active.\n\n"
-                "Send `/fall` to trigger fall alert."
-            )
-            self._send_reply(reply, target_chat_id)
-
-        elif cmd in ("/auto", "auto", "/radar", "radar", "/model", "model"):
-            with self._state_lock:
-                self._forced_state = None
-                self._forced_state_timestamp = time.time()
-            reply = (
-                "🔄 *Automatic Radar Mode Activated*\n"
-                "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                "📡 The GUI will now follow live radar model predictions."
-            )
-            self._send_reply(reply, target_chat_id)
-
-        elif cmd in ("/status", "status", "/check", "check"):
-            curr = self._forced_state or "AUTO (Radar Model)"
-            reply = (
-                "📊 *Fall Monitor Status*\n"
-                "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"• Override State: *{curr}*\n"
-                f"• Mode: *{'Manual Command Override' if self._forced_state else 'Automatic Radar Model'}*\n"
-                f"• Bot: `@testfallbot` Online\n\n"
-                "Commands: `/fall` | `/upright` | `/auto`"
-            )
-            self._send_reply(reply, target_chat_id)
-
-        elif cmd in ("/start", "/help", "help", "?"):
-            reply = (
-                "🤖 *Texas Instruments mmWave Fall Detection Bot*\n"
-                "━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                "Available Commands:\n"
-                "• `/fall` — Force GUI to show *FALLEN!* and trigger buzzer\n"
-                "• `/upright` — Force GUI to show *Upright*\n"
-                "• `/auto` — Resume automatic radar model detection\n"
-                "• `/status` — View current monitor state"
+                "🖥️ GUI Display: *Upright*\n"
+                "🟢 Normal posture active."
             )
             self._send_reply(reply, target_chat_id)
 
     def _send_reply(self, text: str, chat_id: Any):
-        """Send quick reply to user on Telegram."""
-        if not self.is_configured:
+        """Send command response to user via Command Bot."""
+        if not self.is_command_configured or not chat_id:
             return
-        url = f"https://api.telegram.org/bot{self.bot_token}/sendMessage"
+        url = f"https://api.telegram.org/bot{self.command_bot_token}/sendMessage"
         payload = {
             "chat_id": chat_id,
             "text": text,
@@ -440,7 +458,7 @@ class TelegramNotifier:
             "disable_web_page_preview": True,
         }
         try:
-            requests.post(url, json=payload, timeout=5.0)
+            self._http_request("POST", url, json=payload, timeout=5.0)
         except Exception as e:
             print(f"[telegram] Warning sending command reply: {e}")
 

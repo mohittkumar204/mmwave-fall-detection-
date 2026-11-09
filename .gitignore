@@ -1,8 +1,27 @@
-﻿.venv/
+.venv/
 venv/
 __pycache__/
 *.pyc
+*.pycache
 .env
 .streamlit/secrets.toml
 .vscode/
 .idea/
+
+# Runtime logs - don't clutter repo
+logs/ti_gui_logfile_*.txt
+
+# Windows shortcuts
+*.lnk
+
+# One-off utility scripts
+scripts/convert_to_pdf.py
+scripts/dump_layout.py
+scripts/extract_assets.py
+scripts/generate_diagrams.py
+scripts/generate_iei_doc.py
+scripts/inspect_pdf_text.py
+scripts/save_full_text.py
+scripts/test_docx.py
+scripts/verify_docx.py
+extracted_iei_assets/

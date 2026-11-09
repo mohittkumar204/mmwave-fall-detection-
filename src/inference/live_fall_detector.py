@@ -118,12 +118,15 @@ class LiveFallDetector:
         scaler_npz_path = PROJECT_ROOT / "models" / "kinematic_scaler.npz"
         meta_json_path = PROJECT_ROOT / "models" / "kinematic_cnn_lstm_metadata.json"
 
+        self.window_size = 10
         if meta_json_path.exists():
             try:
                 with open(meta_json_path, "r", encoding="utf-8") as f:
                     meta_cnn = json.load(f)
                 if "classes" in meta_cnn:
                     self.cnn_class_names = meta_cnn["classes"]
+                if "window_size" in meta_cnn:
+                    self.window_size = int(meta_cnn["window_size"])
             except Exception as e:
                 print(f"[detector] Warning loading kinematic metadata: {e}")
 
@@ -149,7 +152,7 @@ class LiveFallDetector:
                 )
                 self.cnn_lstm_input_name = self.cnn_lstm_session.get_inputs()[0].name
                 self.use_cnn_lstm = True
-                print(f"[detector] Loaded ONNX Hybrid CNN-LSTM model from {onnx_model_path.name} (classes: {self.class_names})")
+                print(f"[detector] Loaded ONNX Hybrid CNN-LSTM model from {onnx_model_path.name} (window: {self.window_size}, classes: {self.cnn_class_names})")
             except Exception as e:
                 print(f"[detector] ONNX load failed ({e}), checking PyTorch fallback...")
 
@@ -157,12 +160,12 @@ class LiveFallDetector:
             try:
                 import torch
                 from scripts.train_cnn_lstm import KinematicCNNLSTM
-                pt_model = KinematicCNNLSTM(9, 8, 64, 64, len(self.cnn_class_names), 0.25)
+                pt_model = KinematicCNNLSTM(9, self.window_size, 64, 64, len(self.cnn_class_names), 0.25)
                 pt_model.load_state_dict(torch.load(str(pt_model_path), map_location="cpu"))
                 pt_model.eval()
                 self.cnn_lstm_pt = pt_model
                 self.use_cnn_lstm = True
-                print(f"[detector] Loaded PyTorch Hybrid CNN-LSTM model from {pt_model_path.name}")
+                print(f"[detector] Loaded PyTorch Hybrid CNN-LSTM model from {pt_model_path.name} (window: {self.window_size})")
             except Exception as e:
                 print(f"[detector] PyTorch load failed: {e}")
 
@@ -182,10 +185,10 @@ class LiveFallDetector:
                 self.model = joblib.load(model_path)
 
         # 3. Rolling Windows per Target ID
-        # 9 kinematic channels: shape (WINDOW_SIZE, 9)
-        self.kinematic_windows: dict[int, deque[list[float]]] = defaultdict(lambda: deque(maxlen=WINDOW_SIZE))
+        # 9 kinematic channels: shape (window_size, 9)
+        self.kinematic_windows: dict[int, deque[list[float]]] = defaultdict(lambda: deque(maxlen=self.window_size))
         # 22 features window for legacy compatibility
-        self.history_windows: dict[int, deque[list[float]]] = defaultdict(lambda: deque(maxlen=WINDOW_SIZE))
+        self.history_windows: dict[int, deque[list[float]]] = defaultdict(lambda: deque(maxlen=self.window_size))
 
         # 4. State & Alert Tracking
         self.alert_hold_counters: dict[int, int] = defaultdict(int)
@@ -248,14 +251,14 @@ class LiveFallDetector:
             self.history_windows[tid].append(f22)
 
             # Buffering check
-            if len(self.kinematic_windows[tid]) < WINDOW_SIZE:
+            if len(self.kinematic_windows[tid]) < self.window_size:
                 results.append({
                     "tid": tid,
                     "frame_num": frame.frame_num,
                     "status": "BUFFERING",
                     "posture": "BUFFERING",
                     "model_class": "BUFFERING",
-                    "motion_label": "Calibrating radar window...",
+                    "motion_label": f"Calibrating radar window ({len(self.kinematic_windows[tid])}/{self.window_size})...",
                     "confidence": 0.0,
                     "latency_ms": 0.0,
                     "target_x": target.pos_x,
@@ -281,9 +284,9 @@ class LiveFallDetector:
 
             # Run 1D CNN-LSTM model
             if self.use_cnn_lstm:
-                win_np = np.array(list(self.kinematic_windows[tid]), dtype=np.float32)  # (8, 9)
+                win_np = np.array(list(self.kinematic_windows[tid]), dtype=np.float32)  # (10, 9)
                 win_norm = (win_np - self.kinematic_scaler_mean) / self.kinematic_scaler_std
-                win_input = np.expand_dims(win_norm, axis=0).astype(np.float32)  # (1, 8, 9)
+                win_input = np.expand_dims(win_norm, axis=0).astype(np.float32)  # (1, 10, 9)
 
                 if self.cnn_lstm_session is not None:
                     logits = self.cnn_lstm_session.run(None, {self.cnn_lstm_input_name: win_input})[0][0]
@@ -301,14 +304,14 @@ class LiveFallDetector:
                 else:
                     raw_posture = "UPRIGHT"
 
-                # Authoritative model prediction (strictly 3 classes: UPRIGHT, LYING, FALLING)
                 posture_str = raw_posture
                 confidence = float(probs[pred_class_id])
-                is_fall_instant = (posture_str == "FALLING")
+                fall_class_id = self.cnn_class_names.index("FALLING") if "FALLING" in self.cnn_class_names else 2
+                is_fall_instant = (posture_str == "FALLING") or (probs[fall_class_id] > 0.35 and vertical_drop_vel < -0.20)
 
-                # Height reality check: a person standing or walking upright (centroid > 1.05m)
-                # cannot be in a collapsed fallen state
-                if is_fall_instant and tz > 1.05:
+                # Guard against false triggers only if target is higher than upright baseline
+                base_z = self.target_height_baselines.get(tid, tz)
+                if is_fall_instant and tz > base_z + 0.20:
                     is_fall_instant = False
                     posture_str = "UPRIGHT"
                     confidence = 0.88
@@ -317,52 +320,54 @@ class LiveFallDetector:
                 window_matrix = list(self.history_windows[tid])
                 vector_176 = []
                 for feat_idx in range(len(FEATURE_NAMES_22)):
-                    for f_slot in range(WINDOW_SIZE):
+                    for f_slot in range(min(len(window_matrix), WINDOW_SIZE)):
                         vector_176.append(window_matrix[f_slot][feat_idx])
-                vector_176_np = np.array(vector_176, dtype=np.float32)
+                # Pad to 176 if needed
+                while len(vector_176) < 176:
+                    vector_176.append(0.0)
+                vector_176_np = np.array(vector_176[:176], dtype=np.float32)
                 stat_dict = extract_statistical_features_from_window_176(vector_176_np)
                 feat_vec = np.array([[stat_dict[k] for k in self.feature_names]], dtype=np.float32)
                 feat_scaled = self.scaler.transform(feat_vec)
                 pred = int(self.model.predict(feat_scaled)[0])
                 confidence = float(self.model.predict_proba(feat_scaled)[0, 1]) if hasattr(self.model, "predict_proba") else 0.95
                 posture_str = "FALLING" if pred == 1 else "UPRIGHT"
-                is_fall_instant = (pred == 1 and tz < 0.85)
+                is_fall_instant = (pred == 1)
 
             # =========================================================================
             # PHYSICAL FALL DETECTION GATE & KINEMATIC MOTION ESTIMATION
-            # Requires reliable, temporally consistent evidence before triggering a fall.
-            # Standing, walking, sitting, bending, and normal radar noise must not trigger.
+            # Evaluates relative vertical drop from person's baseline upright height.
             # =========================================================================
-            base_z = self.target_height_baselines.get(tid, 1.2)
+            base_z = self.target_height_baselines.get(tid, tz)
+            rel_drop = base_z - tz
 
-            # Rule 1a: Rapid downward collapse trigger (kinematic velocity + significant drop)
+            # Rule 1a: Rapid downward collapse trigger (downward velocity + relative drop)
             kinematic_fall = (
-                vertical_drop_vel < FALL_VEL_Z_THRESHOLD
-                and (tz < base_z - FALL_HEIGHT_DROP_M and tz < 0.85)
+                (vertical_drop_vel < -0.32 and rel_drop > 0.18)
+                or (vertical_drop_vel < -0.48 and rel_drop > 0.10)
             )
-            # Rule 1b: Floor-impact guard — rapid drop resulting in floor-level centroid
+            # Rule 1b: Floor impact / low posture guard (requires downward motion)
             floor_impact = (
-                tz < FALL_FLOOR_Z_M
-                and base_z > 0.80
-                and vertical_drop_vel < -0.40
+                (rel_drop > 0.38 and vertical_drop_vel < -0.22)
+                or (tz < 0.40 and rel_drop > 0.22 and vertical_drop_vel < -0.20)
             )
 
-            # Track maturity guard against fleeting ghost blip disappearance.
-            # Require at least 3 frames of stable tracking so single-frame noise cannot trigger.
+            # Track maturity guard against fleeting single-frame radar ghosts
             track_age = 1
             if hasattr(self, "noise_filter") and hasattr(self.noise_filter, "_states"):
                 st = self.noise_filter._states.get(tid)
                 if st:
                     track_age = st.age_frames
-            if track_age < 3:
+            if track_age < 2:
                 kinematic_fall = False
                 floor_impact = False
 
             if kinematic_fall or floor_impact:
                 is_fall_instant = True
+                posture_str = "FALLING"
                 confidence = max(confidence, 0.92)
 
-            # Check Telegram Remote Command Override (/fall or /upright)
+            # Check Telegram Remote Command Override (/fall or /upright) and Height-Gate (< 0.68m)
             forced = self.get_forced_state()
             if forced == "FALL":
                 posture_str = "FALLING"
@@ -373,6 +378,12 @@ class LiveFallDetector:
                 is_fall_instant = False
                 self.alert_hold_counters[tid] = 0
                 confidence = 0.999
+            elif tz > 0.68:
+                # Target height is above 0.68m: physically upright, suppress fall trigger
+                if is_fall_instant or posture_str == "FALLING":
+                    posture_str = "UPRIGHT"
+                    is_fall_instant = False
+                    self.alert_hold_counters[tid] = 0
 
             # Kinematic motion estimation (separate from model class)
             if horiz_speed >= 0.35:
@@ -390,6 +401,8 @@ class LiveFallDetector:
             # Fall Alert Hold Debounce
             if is_fall_instant or posture_str == "FALLING":
                 self.alert_hold_counters[tid] = self.hold_alert_frames
+            elif posture_str == "UPRIGHT" and tz >= 0.80 * base_z and len(self.recent_postures[tid]) >= 3 and all(p == "UPRIGHT" for p in list(self.recent_postures[tid])[-3:]):
+                self.alert_hold_counters[tid] = 0
 
             active_alert = self.alert_hold_counters[tid] > 0
             if self.alert_hold_counters[tid] > 0:
@@ -494,6 +507,27 @@ class LiveFallDetector:
             except Exception:
                 pass
         self.alert_hold_counters.clear()
+
+    def trigger_fall(self, tid: int = 0, height: Optional[float] = None):
+        """Externally trigger fall alert (e.g. from TI native height-derivative threshold or GUI)."""
+        self.alert_hold_counters[tid] = self.hold_alert_frames
+        if self.buzzer:
+            try:
+                self.buzzer.trigger_fall_alarm()
+            except Exception:
+                pass
+        if self.telegram:
+            try:
+                self.telegram.send_fall_alert({
+                    "tid": tid,
+                    "timestamp": time.time(),
+                    "model_class": "FALLING",
+                    "confidence": 0.98,
+                    "pos_z": height if height is not None else 0.40,
+                    "motion_label": "Floor-Level Fall Detected (Height < 0.68m)",
+                })
+            except Exception:
+                pass
 
     def test_alert_channels(self) -> dict[str, Any]:
         """Send test signals to active hardware buzzer and Telegram bot."""

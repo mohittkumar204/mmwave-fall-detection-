@@ -55,6 +55,15 @@ from src.inference.live_fall_detector import LiveFallDetector
 from src.radar.packet_parser import ParsedFrame, Point, Target
 from src.radar.serial_acquisition import RadarReplayAcquisition
 
+# Dashboard (web UI)
+try:
+    from src.dashboard.app import start_dashboard
+    from src.dashboard import state as _dash_state
+    _DASHBOARD_AVAILABLE = True
+except Exception as _dash_err:
+    _DASHBOARD_AVAILABLE = False
+    print(f"[gui] Dashboard not available: {_dash_err}")
+
 
 class LoggerTee:
     """Safely mirrors stdout to both console and a logfile."""
@@ -150,11 +159,20 @@ class Window(QDialog):
         self.fallTimer.timeout.connect(self.resetFallText)
         self.fallResetTimerOn = 0
         self.fallThresh = -0.22
+        self.last_fall_time = 0.0
+        self.fall_hold_seconds = 0.5  # Held for 0.5 sec as requested
 
         # Timer to monitor Telegram remote control commands (/fall, /upright)
         self.telegramTimer = QTimer()
         self.telegramTimer.timeout.connect(self._check_telegram_remote_override)
         self.telegramTimer.start(250)
+
+        # Start web dashboard (background thread — does not block GUI)
+        if _DASHBOARD_AVAILABLE:
+            try:
+                start_dashboard(port=5050)
+            except Exception as _de:
+                print(f"[gui] Dashboard startup failed: {_de}")
 
         # Replay mode state
         self.replay_acquisition: RadarReplayAcquisition | None = None
@@ -277,8 +295,20 @@ class Window(QDialog):
     # ---------------------------------------------------------
     def setConnectionLayout(self):
         self.comBox = QGroupBox('Connect to Com Ports')
-        self.uartCom = QLineEdit('11')
-        self.dataCom = QLineEdit('14')
+        default_uart = "5"
+        default_data = "6"
+        try:
+            import serial.tools.list_ports
+            for port in serial.tools.list_ports.comports():
+                desc = (port.description or "").lower()
+                if "enhanced" in desc:
+                    default_uart = port.device.upper().replace("COM", "")
+                elif "standard" in desc:
+                    default_data = port.device.upper().replace("COM", "")
+        except Exception:
+            pass
+        self.uartCom = QLineEdit(default_uart)
+        self.dataCom = QLineEdit(default_data)
         self.uartLabel = QLabel('UART COM:')
         self.dataLabel = QLabel('DATA COM:')
         self.connectStatus = QLabel('Not Connected')
@@ -826,26 +856,125 @@ class Window(QDialog):
             except Exception as e:
                 print(f"[GUI] Error in ML inference: {e}")
 
-        # Update Fall Detection UI from model predictions
-        if ml_predictions:
-            falling_target = next((r for r in ml_predictions if r.get("is_fall_instant") or r.get("active_alert")), None)
-            any_fall = (falling_target is not None)
-            primary = falling_target if falling_target is not None else ml_predictions[0]
-            p_tid = primary.get("tid", 0)
-            p_posture = primary.get("posture", "UPRIGHT")
-            p_conf = primary.get("confidence", 0.95)
-            p_lat = primary.get("latency_ms", 1.0)
-            p_desc = primary.get("motion_label", p_posture)
+        # Height data calculation for targets (Instantaneous, Average, Delta)
+        fNum100 = self.frameNum % 100
+        for t in range(numTargets):
+            col = t if targets.shape[1] > t else 0
+            tid = int(targets[0, col])
+            tid_idx = tid % 256
 
-            # Display verified human count
-            if getattr(self.fall_detector, "noise_filter", None) and self.fall_detector.noise_filter.single_person_mode:
-                self.numDetPeople.setText(f'Number of Detected People: {len(ml_predictions)}')
-                self.numTargetsDisplay.setText(f'Targets: {len(ml_predictions)}')
+            # Associate points from current frame pointCloud
+            tIndices = np.where(np.array(indexes) == tid)[0]
+            if len(tIndices) > 0 and pointCloud.shape[1] >= len(indexes):
+                tPointsZ = pointCloud[2, tIndices]
+                # Filter ceiling reflections by using 90th percentile instead of max
+                p_top_z = float(np.percentile(tPointsZ, 90))
+                raw_height = p_top_z + float(self.sensorHeight)
+                z_spread = float(np.amax(tPointsZ) - np.amin(tPointsZ))
+                y_spread = float(np.amax(pointCloud[1, tIndices]) - np.amin(pointCloud[1, tIndices]))
+                x_spread = float(np.amax(pointCloud[0, tIndices]) - np.amin(pointCloud[0, tIndices]))
+            else:
+                # Authoritative tracked vertical position from target centroid z with torso offset
+                raw_height = float(targets[3, col]) + float(self.sensorHeight) + 0.35
+                z_spread = 0.5
+                y_spread = 0.5
+                x_spread = 0.5
 
+            # Temporal low-pass filter to eliminate saw-tooth spikes on instantaneous height
+            prev_f = (fNum100 - 1) % 100
+            prev_instant = float(self.targetSize[0, tid_idx, prev_f])
+            if prev_instant > 0 and raw_height >= prev_instant - 0.35:
+                cur_height = 0.65 * raw_height + 0.35 * prev_instant
+            else:
+                cur_height = raw_height
+
+            self.targetSize[0, tid_idx, fNum100] = cur_height
+            self.targetSize[1, tid_idx, fNum100] = z_spread
+            self.targetSize[2, tid_idx, fNum100] = y_spread
+            self.targetSize[3, tid_idx, fNum100] = x_spread
+
+            if tid in self.lastTID:
+                self.targetSize[4, tid_idx, 0] = self.targetSize[4, tid_idx, 0] + 1
+                age = int(self.targetSize[4, tid_idx, 0])
+                prev_avg = self.targetSize[5, tid_idx, prev_f]
+                if prev_avg == 0:
+                    prev_avg = cur_height
+                self.targetSize[5, tid_idx, fNum100] = (
+                    (1.0 / self.numFrameAvg) * cur_height +
+                    ((self.numFrameAvg - 1.0) / self.numFrameAvg) * prev_avg
+                )
+                if age > 10:
+                    past_f = (fNum100 - 10) % 100
+                    past_avg = self.targetSize[5, tid_idx, past_f]
+                    self.targetSize[6, tid_idx, fNum100] = (
+                        self.targetSize[5, tid_idx, fNum100] - past_avg
+                    )
+                else:
+                    self.targetSize[6, tid_idx, fNum100] = 0.0
+            else:
+                self.targetSize[4, tid_idx, 0] = 1
+                self.targetSize[5, tid_idx, fNum100] = cur_height
+                self.targetSize[6, tid_idx, fNum100] = 0.0
+
+        # Authoritative Fall Gate based on 0.68m Data Height + Remote Telegram Override
+        # User specified: data height <= 0.68m -> state FALLEN, if not -> NO (Upright).
+        # Fall status is held for 6.0 seconds (5-7s) once triggered.
+        # Remote commands: /fall forces FALLEN! for 6.0s, /upright forces Upright immediately ("real asf").
+        FALL_HEIGHT_THRESHOLD_M = 0.68
+
+        forced_override = None
+        if self.fall_detector and hasattr(self.fall_detector, "get_forced_state"):
+            forced_override = self.fall_detector.get_forced_state()
+
+        if forced_override == "UPRIGHT":
+            self.last_fall_time = 0.0  # Instant reset to upright, cancels all hold timers
+
+        now_time = time.time()
+        fall_held = (now_time - self.last_fall_time < self.fall_hold_seconds)
+
+        if numTargets == 0 and forced_override != "FALL" and not fall_held:
+            self.fallAlert.setText('Upright')
+            self.fallAlert.setStyleSheet("font-size: 14pt; font-weight: bold; color: #2E7D32; padding: 4px;")
+            if not self.standingPicture.isNull():
+                self.fallPic.setPixmap(self.standingPicture)
+            self.fallDetEnabled.setText('Fall Detection: Active (No People Detected)')
+            self.fallDetEnabled.setStyleSheet("font-size: 9.5pt; color: #2E7D32;")
+            self.numDetPeople.setText('Number of Detected People: 0')
+            self.numTargetsDisplay.setText('Targets: 0')
+            self.fallResetTimerOn = 0
+            self.fallTimer.stop()
+            if self.fall_detector and getattr(self.fall_detector, "buzzer", None):
+                self.fall_detector.buzzer.clear_alarm(force=True)
+        else:
+            primary_col = 0
+            primary_tid = int(targets[0, primary_col]) if numTargets > 0 else 0
+            primary_height = float(self.targetSize[0, primary_tid % 256, fNum100]) if numTargets > 0 else 1.5
+            p_lat = ml_predictions[0].get("latency_ms", 0.5) if ml_predictions else 0.5
+            p_conf = ml_predictions[0].get("confidence", 0.95) if ml_predictions else 0.95
+
+            self.numDetPeople.setText(f'Number of Detected People: {numTargets}')
+            self.numTargetsDisplay.setText(f'Targets: {numTargets}')
             self.latencyLabel.setText(f'Inference Latency: {p_lat:.1f} ms')
             self.confidenceLabel.setText(f'Confidence: {p_conf * 100:.1f}%')
 
-            if any_fall:
+            # Calculate delta height (blue line) and check if it crosses below red threshold marker
+            delta_h = float(self.targetSize[6, primary_tid % 256, fNum100]) if numTargets > 0 else 0.0
+            delta_crossed = (delta_h < self.fallThresh)
+
+            # Determine fall state:
+            # 1. /fall remote command forces FALLEN!
+            # 2. If forced_override is UPRIGHT, immediately force Upright (real asf)
+            # 3. If primary_height <= 0.68m OR delta heights lines cross (blue below red threshold), flag fall
+            # 4. If fall_held is True (held for 0.5 sec), keep showing FALLEN!
+            is_new_fall = (forced_override != "UPRIGHT" and (primary_height <= FALL_HEIGHT_THRESHOLD_M or delta_crossed))
+            if is_new_fall or forced_override == "FALL":
+                self.last_fall_time = now_time
+                fall_held = True
+
+            is_fall = forced_override == "FALL" or (forced_override != "UPRIGHT" and (is_new_fall or fall_held))
+
+            if is_fall:
+                # Person data height is <= 0.68 m or delta height crossed -> STATE FALLEN! Always show height!
                 self.fallAlert.setText('FALLEN!')
                 self.fallAlert.setStyleSheet(
                     "font-size: 16pt; font-weight: bold; color: red; "
@@ -854,33 +983,52 @@ class Window(QDialog):
                 )
                 if not self.fallingPicture.isNull():
                     self.fallPic.setPixmap(self.fallingPicture)
-                self.fallDetEnabled.setText(f'⚠️ FALL DETECTED (TID: {p_tid}) | High Drop Kinematics')
+                if forced_override == "FALL":
+                    self.fallDetEnabled.setText(f'🚨 FALL DETECTED (TID: {primary_tid}) | Height: {primary_height:.2f}m | /fall')
+                elif delta_crossed:
+                    self.fallDetEnabled.setText(f'⚠️ FALL DETECTED (TID: {primary_tid}) | Height: {primary_height:.2f}m | ΔH Cross')
+                else:
+                    self.fallDetEnabled.setText(f'⚠️ FALL DETECTED (TID: {primary_tid}) | Height: {primary_height:.2f}m (< {FALL_HEIGHT_THRESHOLD_M:.2f}m)')
                 self.fallDetEnabled.setStyleSheet("font-size: 9.5pt; color: #D32F2F; font-weight: bold;")
-                if self.fallResetTimerOn == 0:
-                    self.fallResetTimerOn = 1
-                    self.fallTimer.start(5000)
-            elif p_posture == "BUFFERING":
-                self.fallAlert.setText('Buffering...')
-                self.fallAlert.setStyleSheet("font-size: 13pt; font-weight: bold; color: #1976D2; padding: 4px;")
-                self.fallDetEnabled.setText('Status: Calibrating 8-frame temporal window...')
-                self.fallDetEnabled.setStyleSheet("font-size: 9.5pt; color: #1976D2;")
-                if not self.standingPicture.isNull():
-                    self.fallPic.setPixmap(self.standingPicture)
-            elif p_posture == "LYING":
-                self.fallAlert.setText('Lying')
-                self.fallAlert.setStyleSheet("font-size: 14pt; font-weight: bold; color: #E65100; padding: 4px;")
-                if not self.standingPicture.isNull():
-                    self.fallPic.setPixmap(self.standingPicture)
-                self.fallDetEnabled.setText(f'Model: LYING (TID: {p_tid}) | {p_desc}')
-                self.fallDetEnabled.setStyleSheet("font-size: 9.5pt; color: #E65100;")
+                if self.fall_detector and getattr(self.fall_detector, "buzzer", None):
+                    self.fall_detector.buzzer.trigger_fall_alarm()
+                if self.fall_detector:
+                    self.fall_detector.trigger_fall(primary_tid, height=primary_height)
+                # Push to web dashboard
+                if _DASHBOARD_AVAILABLE:
+                    _esp_ok = bool(self.fall_detector and getattr(self.fall_detector, "buzzer", None) and self.fall_detector.buzzer.is_connected)
+                    _tg_ok  = bool(self.fall_detector and self.fall_detector.telegram is not None)
+                    _dash_state.update_status("FALL", height=primary_height, tid=primary_tid,
+                                              confidence=p_conf, radar_connected=True,
+                                              esp32_connected=_esp_ok, telegram_connected=_tg_ok,
+                                              latency_ms=p_lat)
+
             else:
-                # UPRIGHT posture
+                # Person data height is ABOVE 0.68 m (standing / sitting / or /upright command) -> STATE UPRIGHT. Always show height!
                 self.fallAlert.setText('Upright')
                 self.fallAlert.setStyleSheet("font-size: 14pt; font-weight: bold; color: #2E7D32; padding: 4px;")
                 if not self.standingPicture.isNull():
                     self.fallPic.setPixmap(self.standingPicture)
-                self.fallDetEnabled.setText(f'Model: UPRIGHT (TID: {p_tid}) | {p_desc}')
+                if forced_override == "UPRIGHT":
+                    self.fallDetEnabled.setText(f'Model: UPRIGHT (TID: {primary_tid}) | Height: {primary_height:.2f}m | /upright')
+                else:
+                    self.fallDetEnabled.setText(f'Model: UPRIGHT (TID: {primary_tid}) | Height: {primary_height:.2f}m')
                 self.fallDetEnabled.setStyleSheet("font-size: 9.5pt; color: #2E7D32;")
+                self.fallResetTimerOn = 0
+                self.fallTimer.stop()
+                if self.fall_detector and getattr(self.fall_detector, "buzzer", None):
+                    self.fall_detector.buzzer.clear_alarm(force=True)
+                if self.fall_detector:
+                    self.fall_detector.alert_hold_counters[primary_tid] = 0
+                # Push to web dashboard
+                if _DASHBOARD_AVAILABLE:
+                    _esp_ok = bool(self.fall_detector and getattr(self.fall_detector, "buzzer", None) and self.fall_detector.buzzer.is_connected)
+                    _tg_ok  = bool(self.fall_detector and self.fall_detector.telegram is not None)
+                    _dash_state.update_status("UPRIGHT", height=primary_height, tid=primary_tid,
+                                              confidence=p_conf, radar_connected=True,
+                                              esp32_connected=_esp_ok, telegram_connected=_tg_ok,
+                                              latency_ms=p_lat)
+
 
         # Mounting position flip
         if self.yzFlip == 1:
@@ -945,92 +1093,17 @@ class Window(QDialog):
             self.get_thread.done.connect(self.graphDone)
             self.get_thread.start(priority=QThread.HighestPriority - 1)
 
-        # Height data calculation for targets (Instantaneous, Average, Delta)
-        fNum100 = self.frameNum % 100
+        # Update 3D status text labels above targets
         for t in range(numTargets):
             col = t if targets.shape[1] > t else 0
             tid = int(targets[0, col])
             tid_idx = tid % 256
-
-            # Associate points from current frame pointCloud
-            tIndices = np.where(np.array(indexes) == tid)[0]
-            if len(tIndices) > 0 and pointCloud.shape[1] >= len(indexes):
-                tPointsZ = pointCloud[2, tIndices]
-                # Filter ceiling reflections by using 90th percentile instead of max
-                p_top_z = float(np.percentile(tPointsZ, 90))
-                raw_height = p_top_z + float(self.sensorHeight)
-                z_spread = float(np.amax(tPointsZ) - np.amin(tPointsZ))
-                y_spread = float(np.amax(pointCloud[1, tIndices]) - np.amin(pointCloud[1, tIndices]))
-                x_spread = float(np.amax(pointCloud[0, tIndices]) - np.amin(pointCloud[0, tIndices]))
-            else:
-                # Authoritative tracked vertical position from target centroid z with torso offset
-                raw_height = float(targets[3, col]) + float(self.sensorHeight) + 0.35
-                z_spread = 0.5
-                y_spread = 0.5
-                x_spread = 0.5
-
-            # Temporal low-pass filter to eliminate saw-tooth spikes on instantaneous height
-            prev_f = (fNum100 - 1) % 100
-            prev_instant = float(self.targetSize[0, tid_idx, prev_f])
-            if prev_instant > 0:
-                cur_height = 0.65 * raw_height + 0.35 * prev_instant
-            else:
-                cur_height = raw_height
-
-            self.targetSize[0, tid_idx, fNum100] = cur_height
-            self.targetSize[1, tid_idx, fNum100] = z_spread
-            self.targetSize[2, tid_idx, fNum100] = y_spread
-            self.targetSize[3, tid_idx, fNum100] = x_spread
-
-            if tid in self.lastTID:
-                self.targetSize[4, tid_idx, 0] = self.targetSize[4, tid_idx, 0] + 1
-                age = int(self.targetSize[4, tid_idx, 0])
-                prev_f = (fNum100 - 1) % 100
-                prev_avg = self.targetSize[5, tid_idx, prev_f]
-                if prev_avg == 0:
-                    prev_avg = cur_height
-                self.targetSize[5, tid_idx, fNum100] = (
-                    (1.0 / self.numFrameAvg) * cur_height +
-                    ((self.numFrameAvg - 1.0) / self.numFrameAvg) * prev_avg
-                )
-                if age > 10:
-                    past_f = (fNum100 - 10) % 100
-                    past_avg = self.targetSize[5, tid_idx, past_f]
-                    self.targetSize[6, tid_idx, fNum100] = (
-                        self.targetSize[5, tid_idx, fNum100] - past_avg
-                    )
-                    # Fallback heuristic trigger if ML detector is not active
-                    if self.fall_detector is None and self.targetSize[6, tid_idx, fNum100] < self.fallThresh and fallDetEn:
-                        self.fallAlert.setText('FALLEN!')
-                        self.fallAlert.setStyleSheet("font-size: 16pt; font-weight: bold; color: red; background-color: #ffcccc; padding: 4px;")
-                        if not self.fallingPicture.isNull():
-                            self.fallPic.setPixmap(self.fallingPicture)
-                        if self.fallResetTimerOn == 0:
-                            self.fallResetTimerOn = 1
-                            self.fallTimer.start(5000)
-                else:
-                    self.targetSize[6, tid_idx, fNum100] = 0.0
-            else:
-                self.targetSize[4, tid_idx, 0] = 1
-                self.targetSize[5, tid_idx, fNum100] = cur_height
-                self.targetSize[6, tid_idx, fNum100] = 0.0
-
-            # Floating 3D status text above target
             if tid < len(self.coordStr):
-                tx = targets[1, col]
-                ty = targets[2, col]
-                tz = targets[3, col]
-                t_pred = next((p for p in ml_predictions if p.get("tid") == tid), None)
-                if t_pred:
-                    posture = t_pred.get("posture", "UPRIGHT")
-                    conf = t_pred.get("confidence", 0.95)
-                    is_fall = t_pred.get("is_fall_instant") or t_pred.get("active_alert")
-                    if is_fall:
-                        lbl = f"⚠️ TID:{tid} FALLEN! ({conf*100:.0f}%)"
-                    else:
-                        lbl = f"TID:{tid} {posture} ({conf*100:.0f}%)"
+                t_h = float(self.targetSize[0, tid_idx, fNum100])
+                if forced_override == "FALL" or (forced_override != "UPRIGHT" and (t_h <= FALL_HEIGHT_THRESHOLD_M or fall_held)):
+                    lbl = f"⚠️ TID:{tid} FALLEN! ({t_h:.2f}m)"
                 else:
-                    lbl = f"TID:{tid} z={tz:.2f}m"
+                    lbl = f"TID:{tid} UPRIGHT ({t_h:.2f}m)"
                 self.coordStr[tid].setText(lbl)
 
         if numTargets > 0:
@@ -1107,7 +1180,12 @@ class Window(QDialog):
         forced = self.fall_detector.get_forced_state()
         self._update_alert_channel_status()
 
+        cur_h = 1.5
+        if hasattr(self, "lastTID") and self.lastTID:
+            cur_h = float(self.targetSize[0, int(self.lastTID[0]) % 256, (self.frameNum - 1) % 100])
+
         if forced == "FALL":
+            self.last_fall_time = time.time()
             # Force UI to FALLEN! regardless of whether radar tracks targets or not
             if self.fallAlert.text() != "FALLEN!":
                 self.fallAlert.setText('FALLEN!')
@@ -1118,28 +1196,40 @@ class Window(QDialog):
                 )
                 if not self.fallingPicture.isNull():
                     self.fallPic.setPixmap(self.fallingPicture)
-                self.fallDetEnabled.setText('🚨 FALL OVERRIDE (Telegram Command /fall)')
+                self.fallDetEnabled.setText(f'🚨 FALL DETECTED | Height: {cur_h:.2f}m | /fall')
                 self.fallDetEnabled.setStyleSheet("font-size: 9.5pt; color: #D32F2F; font-weight: bold;")
                 self.confidenceLabel.setText('Confidence: 100.0% (Remote)')
                 self.latencyLabel.setText('Inference Latency: 0.0 ms')
                 if getattr(self.fall_detector, "buzzer", None):
                     self.fall_detector.buzzer.trigger_fall_alarm()
         elif forced == "UPRIGHT":
-            # Force UI to Upright regardless of radar blips
+            # Force UI to Upright immediately ("real asf" zero delay), clears any active fall hold
+            self.last_fall_time = 0.0
             if self.fallAlert.text() == "FALLEN!":
                 self.fallAlert.setText('Upright')
                 self.fallAlert.setStyleSheet("font-size: 14pt; font-weight: bold; color: #2E7D32; padding: 4px;")
                 if not self.standingPicture.isNull():
                     self.fallPic.setPixmap(self.standingPicture)
-                self.fallDetEnabled.setText('Normal Posture: UPRIGHT (Telegram Command /upright)')
+                self.fallDetEnabled.setText(f'Model: UPRIGHT | Height: {cur_h:.2f}m | /upright')
                 self.fallDetEnabled.setStyleSheet("font-size: 9.5pt; color: #2E7D32;")
                 self.confidenceLabel.setText('Confidence: 100.0% (Remote)')
                 self.latencyLabel.setText('Inference Latency: 0.0 ms')
                 if getattr(self.fall_detector, "buzzer", None):
                     self.fall_detector.buzzer.clear_alarm(force=True)
+        elif forced is None and self.fallAlert.text() == "FALLEN!" and (time.time() - self.last_fall_time >= self.fall_hold_seconds):
+            # 0.5s fall hold duration expired: return cleanly to Upright live radar tracking
+            self.fallAlert.setText('Upright')
+            self.fallAlert.setStyleSheet("font-size: 14pt; font-weight: bold; color: #2E7D32; padding: 4px;")
+            if not self.standingPicture.isNull():
+                self.fallPic.setPixmap(self.standingPicture)
+            self.fallDetEnabled.setText(f'Model: UPRIGHT | Height: {cur_h:.2f}m (Real-time Live)')
+            self.fallDetEnabled.setStyleSheet("font-size: 9.5pt; color: #2E7D32;")
+            if getattr(self.fall_detector, "buzzer", None):
+                self.fall_detector.buzzer.clear_alarm(force=True)
 
     def acknowledgeAlert(self):
         """Manually silence active buzzer alarm and reset fall alert badge."""
+        self.last_fall_time = 0.0
         if self.fall_detector:
             self.fall_detector.acknowledge_alarm()
             if hasattr(self.fall_detector, "set_forced_state"):
@@ -1147,6 +1237,7 @@ class Window(QDialog):
         self.resetFallText()
 
     def resetFallText(self):
+        self.last_fall_time = 0.0
         self.fallAlert.setText('Upright')
         self.fallAlert.setStyleSheet("font-size: 14pt; font-weight: bold; color: #2E7D32; padding: 4px;")
         if not self.standingPicture.isNull():
@@ -1159,6 +1250,13 @@ class Window(QDialog):
 
     def closeEvent(self, event):
         """Safely release ML model alert dispatchers on GUI shutdown."""
+        try:
+            if hasattr(self, 'get_thread') and self.get_thread and self.get_thread.isRunning():
+                self.get_thread.wait(500)
+            if hasattr(self, 'heightThread') and self.heightThread and self.heightThread.isRunning():
+                self.heightThread.wait(500)
+        except Exception:
+            pass
         if self.fall_detector:
             try:
                 self.fall_detector.close()
@@ -1397,13 +1495,23 @@ class Window(QDialog):
             return
 
         try:
+            if hasattr(self.parser, "uartCom") and self.parser.uartCom is not None:
+                if not self.parser.uartCom.is_open:
+                    self.parser.uartCom.open()
             self.parser.sendCfg(self.cfg)
             self.configSent = 1
             self.parseTimer.start(self.frameTime)
             print("[GUI] Chirp configuration successfully transmitted to sensor!")
         except Exception as e:
             print(f"[GUI] Error sending config: {e}")
-            QMessageBox.critical(self, "Config Transmission Failed", f"Could not transmit config to radar:\n{e}")
+            QMessageBox.critical(
+                self,
+                "Config Transmission Failed",
+                f"Could not transmit config to radar:\n{e}\n\n"
+                f"Please ensure correct COM port mapping:\n"
+                f"• UART COM must be the Enhanced COM Port (COM{self.uartCom.text().replace('COM','')})\n"
+                f"• DATA COM must be the Standard COM Port (COM{self.dataCom.text().replace('COM','')})"
+            )
 
     def parseData(self):
         if hasattr(self, "uart_thread") and not self.uart_thread.isRunning():

@@ -171,31 +171,49 @@ class Esp32BuzzerAlert:
             self.is_connected = False
 
     def trigger_fall_alarm(self, pattern: Optional[str] = None, duration_seconds: Optional[float] = None) -> bool:
-        """Send FALL alert command to ESP32 to activate buzzer.
-        
-        Debounced: If already buzzing and sent recently, suppresses serial message flooding.
+        """Send a single timed FALL command to the ESP32 to activate the buzzer autonomously.
+
+        The ESP32 receives FALL:<PATTERN>:<DURATION_MS> and handles the buzzer timing
+        entirely on-device (edge AI / firmware side). Python sets a safety-net Timer to
+        reset is_buzzing state after the same duration so the Python side stays in sync.
+
+        Debounced: repeated calls within buzz_hold_seconds are silently ignored to avoid
+        flooding the serial line with duplicate commands.
         """
         if not self.enabled:
             return False
 
         now = time.time()
-        self.last_trigger_time = now
+        dur = duration_seconds if duration_seconds is not None else self.buzz_hold_seconds
 
-        # Debounce: if already buzzing and sent within the last 2.0s, keep state active without flooding serial
-        if self.is_buzzing and (now - self._last_sent_time < 2.0):
+        # Debounce: if already buzzing and command was sent recently, do nothing
+        if self.is_buzzing and (now - self._last_sent_time < dur):
             return True
 
         pat = (pattern or self.beep_pattern).upper()
         if pat not in SUPPORTED_BEEP_PATTERNS:
             pat = "SIREN"
 
-        dur_ms = int((duration_seconds or self.buzz_hold_seconds) * 1000)
-        # Form formatted payload: FALL:<PATTERN>:<DURATION_MS>\n
+        dur_ms = int(dur * 1000)
+        # Single timed command: ESP32 handles buzzing autonomously for dur_ms milliseconds
         payload = f"FALL:{pat}:{dur_ms}\n".encode("utf-8")
 
+        self.last_trigger_time = now
         self.is_buzzing = True
         self._last_sent_time = now
-        return self._send_payload(payload)
+
+        ok = self._send_payload(payload)
+
+        # Safety-net: auto-reset Python is_buzzing state after the same duration so
+        # subsequent falls are not suppressed by the debounce guard
+        def _auto_reset():
+            self.is_buzzing = False
+
+        t = threading.Timer(dur, _auto_reset)
+        t.daemon = True
+        t.start()
+
+        return ok
 
     def clear_alarm(self, force: bool = False) -> bool:
         """Send CLEAR command to ESP32 to stop buzzer if hold time has passed."""

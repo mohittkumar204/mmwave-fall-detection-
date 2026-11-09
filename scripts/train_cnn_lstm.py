@@ -124,23 +124,38 @@ class KinematicCNNLSTM(nn.Module):
 
 
 def find_dataset_files(data_dir: Path) -> list[tuple[Path, str, str, str]]:
-    """Scan data_dir flexibly for targets.csv or alternative recording files.
+    """Scan data_dir and sibling dataset directories flexibly for targets.csv files.
     
-    Returns list of (file_path, subject_name, activity_name, session_id).
+    Returns deduplicated list of (file_path, subject_name, activity_name, session_id).
     """
-    results = []
-    candidates = list(data_dir.rglob("targets.csv"))
-    if not candidates:
-        candidates = list(data_dir.rglob("features_22.csv"))
+    search_dirs = [data_dir]
+    for alt in [
+        PROJECT_ROOT / "datasets" / "my_posture_dataset",
+        PROJECT_ROOT / "dataset" / "my_posture_dataset",
+        PROJECT_ROOT / "dataset" / "archive_old_5class_dataset",
+        PROJECT_ROOT / "datasets" / "archive_old_5class_dataset",
+    ]:
+        if alt.exists() and alt not in search_dirs:
+            search_dirs.append(alt)
 
-    for fpath in candidates:
-        parts = fpath.relative_to(data_dir).parts
-        if len(parts) >= 2:
-            subject = parts[0]
-            activity = parts[1].lower()
-            trial = parts[2] if len(parts) >= 3 else fpath.parent.name
-            session_id = f"{subject}_{activity}_{trial}"
-            results.append((fpath, subject, activity, session_id))
+    results = []
+    seen_sessions = set()
+    for s_dir in search_dirs:
+        candidates = list(s_dir.rglob("targets.csv"))
+        if not candidates:
+            candidates = list(s_dir.rglob("features_22.csv"))
+
+        for fpath in candidates:
+            parts = fpath.relative_to(s_dir).parts
+            if len(parts) >= 2:
+                subject = parts[0]
+                activity = parts[1].lower()
+                trial = parts[2] if len(parts) >= 3 else fpath.parent.name
+                session_id = f"{subject}_{activity}_{trial}"
+                if session_id in seen_sessions:
+                    continue
+                seen_sessions.add(session_id)
+                results.append((fpath, subject, activity, session_id))
     return results
 
 
@@ -491,13 +506,13 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Train 1D CNN-LSTM Fall & Posture Detection Model")
     parser.add_argument(
         "--data-dir",
-        default=str(PROJECT_ROOT / "dataset" / "my_posture_dataset"),
+        default=str(PROJECT_ROOT / "datasets" / "my_posture_dataset"),
         help="Path to dataset root folder containing person 1..6 subfolders",
     )
-    parser.add_argument("--epochs", type=int, default=35, help="Number of training epochs")
+    parser.add_argument("--epochs", type=int, default=40, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=64, help="Batch size for training")
     parser.add_argument("--lr", type=float, default=0.001, help="Learning rate")
-    parser.add_argument("--window-size", type=int, default=8, help="Sliding window size in frames")
+    parser.add_argument("--window-size", type=int, default=10, help="Sliding window size in frames")
     parser.add_argument(
         "--split-by-session",
         action="store_true",

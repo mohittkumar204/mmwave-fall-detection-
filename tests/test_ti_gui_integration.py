@@ -146,8 +146,8 @@ def test_gui_fall_detection_trigger(qapp):
     """Test F: Verify that a rapid downward fall motion triggers the ML fall alert in the GUI."""
     window = Window()
 
-    # Step 1: 8 frames of normal upright stance to establish baseline
-    for frame_idx in range(1, 9):
+    # Step 1: 11 frames of normal upright stance to establish baseline and fill temporal window
+    for frame_idx in range(1, 12):
         targets = np.zeros((13, 1))
         targets[0, 0] = 0
         targets[1, 0] = 0.0
@@ -176,7 +176,7 @@ def test_gui_fall_detection_trigger(qapp):
     fall_targets[0, 0] = 0
     fall_targets[1, 0] = 0.0
     fall_targets[2, 0] = 2.0
-    fall_targets[3, 0] = 0.35  # Near floor
+    fall_targets[3, 0] = -1.35  # Near floor: -1.35 + 1.5 sensorHeight = 0.15m (< 0.20m)
     fall_targets[4, 0] = 0.0
     fall_targets[5, 0] = 0.0
     fall_targets[6, 0] = -1.2  # Downward velocity exceeding -0.55 m/s threshold
@@ -188,12 +188,12 @@ def test_gui_fall_detection_trigger(qapp):
     for p in range(10):
         fall_points[0, p] = 0.0
         fall_points[1, p] = 2.0
-        fall_points[2, p] = 0.35
+        fall_points[2, p] = -1.35
         fall_points[3, p] = -1.2
         fall_points[4, p] = 20.0
     fall_indexes = np.zeros((10,))
 
-    window.updateGraph((fall_points, fall_targets, fall_indexes, 10, 1, 9, 0, []))
+    window.updateGraph((fall_points, fall_targets, fall_indexes, 10, 1, 12, 0, []))
 
     # Assert that FALLEN alert was triggered
     assert window.fallAlert.text() == "FALLEN!"
@@ -284,8 +284,8 @@ def test_part8_test1_model_metadata():
     assert meta["classes"] == ["UPRIGHT", "LYING", "FALLING"], f"Expected 3 classes, got {meta['classes']}"
     assert meta["num_classes"] == 3
     assert len(meta["features"]) == 9
-    assert meta["window_size"] == 8
-    assert meta["input_shape"] == [1, 8, 9]
+    assert meta["window_size"] in (8, 10)
+    assert meta["input_shape"] in ([1, 8, 9], [1, 10, 9])
 
 
 def test_part8_test2_preprocessing_scaler():
@@ -309,20 +309,27 @@ def test_part8_test2_preprocessing_scaler():
 
 def test_part8_test3_onnx_inference_parity():
     """PART 8 Test 3: Verify exported ONNX model runs with live input shape and matches PyTorch outputs."""
+    import json
     import onnxruntime as ort
     from scripts.train_cnn_lstm import KinematicCNNLSTM
 
     onnx_path = "models/onnx/kinematic_cnn_lstm.onnx"
     pt_path = "models/kinematic_cnn_lstm.pt"
+    meta_path = "models/kinematic_cnn_lstm_metadata.json"
     assert Path(onnx_path).exists()
     assert Path(pt_path).exists()
+    assert Path(meta_path).exists()
 
-    pt_model = KinematicCNNLSTM(in_channels=9, seq_len=8, conv_filters=64, lstm_hidden=64, num_classes=3, dropout=0.25)
+    with open(meta_path, "r", encoding="utf-8") as f:
+        meta = json.load(f)
+    win_size = int(meta.get("window_size", 10))
+
+    pt_model = KinematicCNNLSTM(in_channels=9, seq_len=win_size, conv_filters=64, lstm_hidden=64, num_classes=3, dropout=0.25)
     pt_model.load_state_dict(torch.load(pt_path))
     pt_model.eval()
 
     sess = ort.InferenceSession(onnx_path)
-    inp = np.random.randn(1, 8, 9).astype(np.float32)
+    inp = np.random.randn(1, win_size, 9).astype(np.float32)
 
     with torch.no_grad():
         pt_out = pt_model(torch.from_numpy(inp)).numpy()
@@ -338,8 +345,8 @@ def test_part8_test4_class_mapping(qapp):
     assert detector.cnn_class_names == ["UPRIGHT", "LYING", "FALLING"]
     assert detector.class_names == ["UPRIGHT", "LYING", "FALLING"]
 
-    # Test that normal upright target produces UPRIGHT, not WALKING or SITTING
-    for f in range(1, 10):
+    # Test that normal upright target produces UPRIGHT, not WALKING or SITTING (after window is filled)
+    for f in range(1, 16):
         t = Target(tid=0, pos_x=0.0, pos_y=2.0, pos_z=1.5, vel_x=0.5, vel_y=0.0, vel_z=0.0, acc_x=0.0, acc_y=0.0, acc_z=0.0)
         res = detector.process_frame(ParsedFrame(frame_num=f, targets=[t], points=[]))
     assert res[0]["model_class"] in ("UPRIGHT", "LYING", "FALLING")

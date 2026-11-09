@@ -14,8 +14,8 @@ import pandas as pd
 def get_dataset_root() -> Path:
     """Find dataset directory containing recorded sessions."""
     candidates = [
-        Path("dataset/my_posture_dataset"),
         Path("datasets/my_posture_dataset"),
+        Path("dataset/my_posture_dataset"),
         Path("dataset/archive_old_5class_dataset"),
         Path("datasets/archive_old_5class_dataset"),
         Path("dataset"),

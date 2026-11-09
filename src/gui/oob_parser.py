@@ -953,6 +953,12 @@ class uartParserSDK():
 
     #send cfg over uart
     def sendCfg(self, cfg):
+        if hasattr(self, 'uartCom') and self.uartCom is not None:
+            if not self.uartCom.is_open:
+                try:
+                    self.uartCom.open()
+                except Exception as e:
+                    print(f"[parser] Reopening uartCom: {e}")
         for line in cfg:
             time.sleep(.1)
             self.uartCom.write(line.encode())
@@ -966,6 +972,12 @@ class uartParserSDK():
 
     #send single command to device over UART Com.
     def sendLine(self, line):
+        if hasattr(self, 'uartCom') and self.uartCom is not None:
+            if not self.uartCom.is_open:
+                try:
+                    self.uartCom.open()
+                except Exception as e:
+                    print(f"[parser] Reopening uartCom: {e}")
         self.uartCom.write(line.encode())
         ack = self.uartCom.readline()
         print(ack)
